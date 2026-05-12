@@ -573,6 +573,18 @@ class App:
         ml.start()
         self._global_listeners.append(ml)
 
+        def on_press(key):
+            try:
+                if hasattr(key, 'char') and key.char and key.char.isprintable():
+                    self.root.after(0, self._on_key_global)
+            except Exception:
+                pass
+
+        kl = pynput_keyboard.Listener(on_press=on_press)
+        kl.daemon = True
+        kl.start()
+        self._global_listeners.append(kl)
+
     def _on_key(self, event):
         if event.char and event.char.isprintable():
             result = self.state.on_type_char(self.root)
@@ -599,6 +611,11 @@ class App:
         result = self.state.on_click(self.root)
         if result:
             self._on_reward(result, label="点击")
+
+    def _on_key_global(self):
+        result = self.state.on_type_char(self.root)
+        if result:
+            self._on_reward(result, label="打字爆发")
 
     def _on_reward(self, result, label, quiet=False):
         self.audio.play(result["type"])
