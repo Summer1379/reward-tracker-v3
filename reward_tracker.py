@@ -23,6 +23,12 @@ try:
 except ImportError:
     HAS_NUMPY = False
 
+try:
+    from pynput import mouse as pynput_mouse, keyboard as pynput_keyboard
+    HAS_PYNPUT = True
+except ImportError:
+    HAS_PYNPUT = False
+
 
 APP_NAME = "奖励追踪器 v3"
 SAVE_FILE = os.path.expanduser("~/.reward_tracker_v3.json")
@@ -545,9 +551,27 @@ class App:
 
     def _bind_events(self):
         self.text_input.bind("<KeyPress>", self._on_key)
-        self.play_area.bind("<Motion>", self._on_mouse_move)
-        self.play_area.bind("<Button-1>", self._on_click)
         self.root.bind("<Control-m>", lambda e: self._toggle_mute())
+        self._global_listeners = []
+        if HAS_PYNPUT:
+            self._start_global_listeners()
+        else:
+            # fallback: 窗口内监听
+            self.play_area.bind("<Motion>", self._on_mouse_move)
+            self.play_area.bind("<Button-1>", self._on_click)
+
+    def _start_global_listeners(self):
+        def on_move(x, y):
+            self.root.after(0, lambda: self._on_mouse_move_global(x, y))
+
+        def on_click(x, y, button, pressed):
+            if pressed:
+                self.root.after(0, lambda: self._on_click_global())
+
+        ml = pynput_mouse.Listener(on_move=on_move, on_click=on_click)
+        ml.daemon = True
+        ml.start()
+        self._global_listeners.append(ml)
 
     def _on_key(self, event):
         if event.char and event.char.isprintable():
@@ -561,7 +585,17 @@ class App:
         if result:
             self._on_reward(result, label="移动", quiet=True)
 
+    def _on_mouse_move_global(self, x, y):
+        result = self.state.on_move(x, y, self.root)
+        if result:
+            self._on_reward(result, label="移动", quiet=True)
+
     def _on_click(self, event):
+        result = self.state.on_click(self.root)
+        if result:
+            self._on_reward(result, label="点击")
+
+    def _on_click_global(self):
         result = self.state.on_click(self.root)
         if result:
             self._on_reward(result, label="点击")
@@ -614,6 +648,11 @@ class App:
         try:
             self.state.save()
             self.audio.shutdown()
+            for l in getattr(self, "_global_listeners", []):
+                try:
+                    l.stop()
+                except Exception:
+                    pass
         finally:
             self.root.destroy()
 
