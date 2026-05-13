@@ -29,6 +29,14 @@ try:
 except ImportError:
     HAS_PYNPUT = False
 
+try:
+    from effects_overlay import make_overlay
+    HAS_OVERLAY = True
+except ImportError:
+    HAS_OVERLAY = False
+    def make_overlay():
+        return None
+
 
 APP_NAME = "奖励追踪器 v3"
 SAVE_FILE = os.path.expanduser("~/.reward_tracker_v3.json")
@@ -819,6 +827,7 @@ class App:
         self.state = RewardState()
         self.audio = AudioStateMachine()
         self.effects = DesktopEffects(root)
+        self.overlay = make_overlay()  # 全屏特效层（PyObjC + WKWebView）
         self.log_entries = deque(maxlen=20)
         self._xp_visual = 0.0  # 用于 XP 进度条动画过渡
 
@@ -1134,28 +1143,41 @@ class App:
             "move": COLORS["SUCCESS"],
         }.get(result["type"], COLORS["GOLD"])
 
-        # 飘字文案：根据连击和积分选择
+        # 飘字：根据连击和积分选择
         if result["type"] in ("click", "type"):
             combo = self.state.combo
             pts = result["points"]
+            critical = False
             if combo >= 30:
                 text = f"CHAIN ×{combo}  +{pts}"
-                big = True
+                critical = True
+                color = COLORS["STAR"]
             elif combo >= 15:
                 text = f"CHAIN ×{combo}  +{pts}"
-                big = False
+                color = COLORS["GOLD"]
             elif pts >= 50:
                 text = f"CRITICAL!  +{pts}"
-                big = True
+                critical = True
                 color = COLORS["STAR"]
             elif pts >= 30:
                 text = f"PERFECT  +{pts}"
-                big = False
                 color = COLORS["GOLD"]
             else:
                 text = f"+{pts} EXP"
-                big = False
-            self.effects.floating_text(text, color=color, big=big)
+
+            # 全屏 overlay 优先（在鼠标位置触发）
+            if self.overlay:
+                try:
+                    px = self.root.winfo_pointerx()
+                    py = self.root.winfo_pointery()
+                    if critical:
+                        self.overlay.critical(text, x=px, y=py, color=color)
+                    else:
+                        self.overlay.float_text(text, x=px, y=py, color=color)
+                except Exception:
+                    pass
+            else:
+                self.effects.floating_text(text, color=color, big=critical)
 
         if not quiet:
             self._log(f"+{result['points']} {label}")
@@ -1163,13 +1185,19 @@ class App:
         if result.get("leveled"):
             self.audio.play("level_up", priority=True)
             self._log(f"★ 升级到 LV.{self.state.level}")
-            self.effects.show_level_up(self.state.level)
-            self.effects.floating_text(f"LEVEL UP  LV.{self.state.level}", color=COLORS["STAR"], big=True)
+            if self.overlay:
+                self.overlay.level_up(self.state.level)
+            else:
+                self.effects.show_level_up(self.state.level)
+                self.effects.floating_text(f"LEVEL UP  LV.{self.state.level}", color=COLORS["STAR"], big=True)
 
         for title, rarity in self.state.check_achievements():
             self.audio.play("achievement", priority=True)
             self._log(f"🏆 {title}")
-            self.effects.show_achievement(title, rarity)
+            if self.overlay:
+                self.overlay.achievement(title, rarity)
+            else:
+                self.effects.show_achievement(title, rarity)
 
         for title, bonus in self.state.check_challenges():
             self.audio.play("achievement", priority=True)
@@ -1368,6 +1396,11 @@ class App:
         try:
             self.state.save()
             self.audio.shutdown()
+            if self.overlay:
+                try:
+                    self.overlay.shutdown()
+                except Exception:
+                    pass
             for l in getattr(self, "_global_listeners", []):
                 try:
                     l.stop()

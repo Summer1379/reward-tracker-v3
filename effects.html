@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>FX Overlay</title>
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    width: 100vw; height: 100vh;
+    background: transparent !important;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+  }
+  #stage {
+    position: absolute; inset: 0;
+    background: transparent;
+  }
+  .fx-text {
+    position: absolute;
+    font-family: "Cinzel", "Helvetica Neue", "PingFang SC", serif;
+    font-weight: 900;
+    letter-spacing: 1px;
+    pointer-events: none;
+    will-change: transform, opacity;
+    transform: translate(-50%, -50%);
+    text-shadow:
+      0 0 6px currentColor,
+      0 0 14px currentColor,
+      0 0 28px rgba(255,180,80,0.6),
+      0 2px 4px rgba(0,0,0,0.9);
+  }
+
+  @keyframes ffFloat {
+    0%   { transform: translate(-50%, -50%) scale(0.4) rotate(-2deg); opacity: 0; }
+    15%  { transform: translate(-50%, -65%) scale(1.5) rotate(0deg);  opacity: 1; }
+    35%  { transform: translate(-50%, -80%) scale(1.0) rotate(0deg);  opacity: 1; }
+    100% { transform: translate(-50%, -160%) scale(0.85) rotate(0deg); opacity: 0; }
+  }
+  .fx-text.float { animation: ffFloat 1.4s cubic-bezier(.2,.7,.3,1) forwards; }
+
+  @keyframes ffCritical {
+    0%   { transform: translate(-50%, -50%) scale(0.2) rotate(-8deg); opacity: 0; filter: brightness(2); }
+    20%  { transform: translate(-50%, -55%) scale(1.8) rotate(0deg);  opacity: 1; filter: brightness(1.6); }
+    40%  { transform: translate(-50%, -70%) scale(1.2) rotate(2deg);  opacity: 1; filter: brightness(1.2); }
+    100% { transform: translate(-50%, -180%) scale(0.7) rotate(0deg); opacity: 0; filter: brightness(1); }
+  }
+  .fx-text.critical { animation: ffCritical 1.8s cubic-bezier(.1,.9,.3,1) forwards; }
+
+  @keyframes ffLevelUp {
+    0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    10%  { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+    20%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+    80%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+    100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
+  }
+  .fx-text.levelup { animation: ffLevelUp 2.4s ease-out forwards; }
+
+  @keyframes shockring {
+    0%   { transform: translate(-50%, -50%) scale(0.1); opacity: 0.95; }
+    100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+  }
+  .fx-ring {
+    position: absolute;
+    width: 220px; height: 220px;
+    border: 3px solid #FFD700;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 30px #FFD700, inset 0 0 30px #FFD700;
+    animation: shockring 0.9s ease-out forwards;
+  }
+  .fx-ring.crystal { border-color: #4FC3F7; box-shadow: 0 0 30px #4FC3F7, inset 0 0 30px #4FC3F7; }
+  .fx-ring.purple  { border-color: #A86FDF; box-shadow: 0 0 30px #A86FDF, inset 0 0 30px #A86FDF; }
+
+  @keyframes burst {
+    0%   { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(360deg); opacity: 0; }
+  }
+  .fx-particle {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: burst var(--dur, 0.8s) ease-out forwards;
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+  const stage = document.getElementById('stage');
+
+  function spawnFloat(text, x, y, color, kind) {
+    const el = document.createElement('div');
+    el.className = 'fx-text ' + (kind || 'float');
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.color = color;
+    el.style.fontSize = (kind === 'critical' ? '52px' : kind === 'levelup' ? '72px' : '32px');
+    stage.appendChild(el);
+    setTimeout(() => el.remove(),
+      kind === 'critical' ? 1900 : kind === 'levelup' ? 2500 : 1500);
+  }
+
+  function spawnRing(x, y, variant) {
+    const r = document.createElement('div');
+    r.className = 'fx-ring ' + (variant || '');
+    r.style.left = x + 'px';
+    r.style.top = y + 'px';
+    stage.appendChild(r);
+    setTimeout(() => r.remove(), 1000);
+  }
+
+  function spawnBurst(x, y, color, count) {
+    count = count || 14;
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+      const dist = 80 + Math.random() * 60;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      const dur = (0.6 + Math.random() * 0.4).toFixed(2) + 's';
+      const p = document.createElement('div');
+      p.className = 'fx-particle';
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      p.style.background = color;
+      p.style.boxShadow = '0 0 12px ' + color;
+      p.style.setProperty('--dx', dx + 'px');
+      p.style.setProperty('--dy', dy + 'px');
+      p.style.setProperty('--dur', dur);
+      stage.appendChild(p);
+      setTimeout(() => p.remove(), 1100);
+    }
+  }
+
+  // Python 调用入口
+  window.fxFloat = function(text, x, y, color) {
+    spawnFloat(text, x, y, color || '#FFD700', 'float');
+  };
+  window.fxCritical = function(text, x, y, color) {
+    spawnFloat(text, x, y, color || '#FFD700', 'critical');
+    spawnRing(x, y, 'crystal');
+    spawnBurst(x, y, color || '#FFD700', 16);
+  };
+  window.fxLevelUp = function(level, x, y) {
+    const cx = x || window.innerWidth / 2;
+    const cy = y || window.innerHeight / 2;
+    spawnFloat('LEVEL UP', cx, cy - 60, '#4FC3F7', 'levelup');
+    spawnFloat('Lv.' + level, cx, cy + 40, '#FFD700', 'critical');
+    spawnRing(cx, cy, 'crystal');
+    spawnRing(cx, cy, '');
+    spawnBurst(cx, cy, '#4FC3F7', 24);
+    spawnBurst(cx, cy, '#FFD700', 18);
+  };
+  window.fxAchievement = function(title, rarity) {
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const colors = {
+      bronze:  '#CD7F32',
+      silver:  '#BDC3C7',
+      crystal: '#4FC3F7',
+      star:    '#FFD700',
+    };
+    const c = colors[rarity] || '#FFD700';
+    spawnFloat('★ ' + title + ' ★', cx, cy, c, 'critical');
+    spawnRing(cx, cy, rarity === 'crystal' ? 'crystal' : '');
+    spawnBurst(cx, cy, c, 20);
+  };
+  window.fxClear = function() { stage.innerHTML = ''; };
+</script>
+</body>
+</html>
