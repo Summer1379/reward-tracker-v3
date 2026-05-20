@@ -2,87 +2,175 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>FX Overlay</title>
+<title>Pastoral FX Overlay</title>
 <style>
   html, body {
-    margin: 0; padding: 0;
-    width: 100vw; height: 100vh;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
     background: transparent !important;
     overflow: hidden;
     pointer-events: none;
     user-select: none;
   }
+
   #stage {
-    position: absolute; inset: 0;
+    position: absolute;
+    inset: 0;
     background: transparent;
   }
+
   .fx-text {
     position: absolute;
-    font-family: "Cinzel", "Helvetica Neue", "PingFang SC", serif;
-    font-weight: 900;
-    letter-spacing: 1px;
-    pointer-events: none;
-    will-change: transform, opacity;
+    z-index: 5;
+    isolation: isolate;
     transform: translate(-50%, -50%);
+    pointer-events: none;
+    will-change: transform, opacity, filter;
+    font-family: "Songti SC", "STSong", "Kaiti SC", "PingFang SC", "Hiragino Sans GB", serif;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.08;
+    white-space: nowrap;
+    color: #fff7df;
+    -webkit-text-stroke: 0.28px rgba(80, 58, 31, 0.34);
     text-shadow:
-      0 0 6px currentColor,
-      0 0 14px currentColor,
-      0 0 28px rgba(255,180,80,0.6),
-      0 2px 4px rgba(0,0,0,0.9);
+      0 1px 1px rgba(88, 61, 35, 0.42),
+      0 7px 20px rgba(88, 61, 35, 0.28),
+      0 0 18px rgba(255, 235, 163, 0.58);
+    filter: drop-shadow(0 8px 14px rgba(51, 70, 36, 0.18));
   }
 
-  @keyframes ffFloat {
-    0%   { transform: translate(-50%, -50%) scale(0.4) rotate(-2deg); opacity: 0; }
-    15%  { transform: translate(-50%, -65%) scale(1.5) rotate(0deg);  opacity: 1; }
-    35%  { transform: translate(-50%, -80%) scale(1.0) rotate(0deg);  opacity: 1; }
-    100% { transform: translate(-50%, -160%) scale(0.85) rotate(0deg); opacity: 0; }
+  .fx-text::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -9px -20px -8px;
+    border-radius: 999px;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(255, 250, 221, 0.66), rgba(255, 250, 221, 0.16) 58%, rgba(255, 250, 221, 0) 74%),
+      linear-gradient(90deg, rgba(156, 185, 108, 0.18), rgba(255, 220, 128, 0.17));
+    border: 1px solid rgba(255, 238, 174, 0.22);
+    box-shadow:
+      0 8px 24px rgba(72, 89, 48, 0.14),
+      inset 0 0 18px rgba(255, 248, 211, 0.2);
   }
-  .fx-text.float { animation: ffFloat 1.4s cubic-bezier(.2,.7,.3,1) forwards; }
 
-  @keyframes ffCritical {
-    0%   { transform: translate(-50%, -50%) scale(0.2) rotate(-8deg); opacity: 0; filter: brightness(2); }
-    20%  { transform: translate(-50%, -55%) scale(1.8) rotate(0deg);  opacity: 1; filter: brightness(1.6); }
-    40%  { transform: translate(-50%, -70%) scale(1.2) rotate(2deg);  opacity: 1; filter: brightness(1.2); }
-    100% { transform: translate(-50%, -180%) scale(0.7) rotate(0deg); opacity: 0; filter: brightness(1); }
+  .fx-text.spring {
+    color: #f5ffe8;
+    background: linear-gradient(180deg, #fffff3 0%, #d6f6b6 48%, #9fcd78 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+      0 1px 1px rgba(42, 78, 36, 0.38),
+      0 7px 18px rgba(69, 96, 47, 0.28),
+      0 0 16px rgba(195, 238, 149, 0.55);
   }
-  .fx-text.critical { animation: ffCritical 1.8s cubic-bezier(.1,.9,.3,1) forwards; }
 
-  @keyframes ffLevelUp {
-    0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-    10%  { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
-    20%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-    80%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-    100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
+  .fx-text.harvest {
+    color: #fff2bc;
+    background: linear-gradient(180deg, #fffbe0 0%, #ffe18b 48%, #c99c45 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+      0 1px 1px rgba(91, 61, 22, 0.42),
+      0 8px 22px rgba(124, 78, 24, 0.28),
+      0 0 20px rgba(255, 215, 118, 0.62);
   }
-  .fx-text.levelup { animation: ffLevelUp 2.4s ease-out forwards; }
 
-  @keyframes shockring {
-    0%   { transform: translate(-50%, -50%) scale(0.1); opacity: 0.95; }
-    100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+  .fx-text.levelup::before {
+    inset: -13px -30px -11px;
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(255, 246, 198, 0.78), rgba(255, 226, 132, 0.18) 60%, rgba(255, 226, 132, 0) 78%),
+      linear-gradient(90deg, rgba(123, 166, 94, 0.22), rgba(232, 185, 75, 0.22), rgba(123, 166, 94, 0.18));
+    border-color: rgba(255, 228, 143, 0.34);
+  }
+
+  @keyframes meadowFloat {
+    0%   { transform: translate(-50%, -34%) scale(0.78) rotate(-0.6deg); opacity: 0; filter: blur(2px); }
+    20%  { transform: translate(-50%, -52%) scale(1.04) rotate(0.5deg); opacity: 1; filter: blur(0); }
+    58%  { transform: translate(-50%, -82%) scale(1.0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(-50%, -138%) scale(0.92) rotate(-0.4deg); opacity: 0; filter: blur(1px); }
+  }
+  .fx-text.float { animation: meadowFloat 1.72s cubic-bezier(.2,.74,.2,1) forwards; }
+
+  @keyframes petalAccent {
+    0%   { transform: translate(-50%, -30%) scale(0.55) rotate(-2deg); opacity: 0; filter: blur(1.5px); }
+    16%  { transform: translate(-50%, -54%) scale(1.12) rotate(1deg); opacity: 1; filter: blur(0); }
+    32%  { transform: translate(-50%, -61%) scale(0.96) rotate(-0.4deg); opacity: 1; }
+    68%  { transform: translate(-50%, -90%) scale(1.0) rotate(0.3deg); opacity: 1; }
+    100% { transform: translate(-50%, -150%) scale(0.86) rotate(-0.6deg); opacity: 0; filter: blur(1px); }
+  }
+  .fx-text.critical { animation: petalAccent 1.82s cubic-bezier(.17,.84,.23,1) forwards; }
+
+  @keyframes harvestCrown {
+    0%   { transform: translate(-50%, -42%) scale(0.48) rotate(-2.5deg); opacity: 0; filter: blur(2px); }
+    15%  { transform: translate(-50%, -60%) scale(1.13) rotate(1.6deg); opacity: 1; filter: blur(0); }
+    28%  { transform: translate(-50%, -56%) scale(0.96) rotate(-0.8deg); opacity: 1; }
+    44%  { transform: translate(-50%, -63%) scale(1.02) rotate(0.3deg); opacity: 1; }
+    78%  { transform: translate(-50%, -78%) scale(1.0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(-50%, -118%) scale(0.9) rotate(0deg); opacity: 0; filter: blur(1px); }
+  }
+  .fx-text.levelup { animation: harvestCrown 2.08s cubic-bezier(.18,.9,.22,1) forwards; }
+
+  @keyframes meadowRing {
+    0%   { transform: translate(-50%, -50%) scale(0.18); opacity: 0.72; filter: blur(0); }
+    72%  { opacity: 0.32; }
+    100% { transform: translate(-50%, -50%) scale(2.35); opacity: 0; filter: blur(1px); }
   }
   .fx-ring {
     position: absolute;
-    width: 220px; height: 220px;
-    border: 3px solid #FFD700;
+    z-index: 2;
+    width: 156px;
+    height: 66px;
+    border: 1.4px solid rgba(188, 222, 128, 0.72);
     border-radius: 50%;
     pointer-events: none;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 30px #FFD700, inset 0 0 30px #FFD700;
-    animation: shockring 0.9s ease-out forwards;
+    box-shadow:
+      0 0 20px rgba(172, 220, 113, 0.34),
+      inset 0 0 18px rgba(255, 235, 154, 0.24);
+    animation: meadowRing 1.18s ease-out forwards;
   }
-  .fx-ring.crystal { border-color: #4FC3F7; box-shadow: 0 0 30px #4FC3F7, inset 0 0 30px #4FC3F7; }
-  .fx-ring.purple  { border-color: #A86FDF; box-shadow: 0 0 30px #A86FDF, inset 0 0 30px #A86FDF; }
+  .fx-ring.harvest {
+    width: 184px;
+    height: 76px;
+    border-color: rgba(255, 218, 120, 0.78);
+    box-shadow:
+      0 0 28px rgba(255, 196, 92, 0.38),
+      inset 0 0 18px rgba(255, 248, 198, 0.32);
+  }
 
-  @keyframes burst {
-    0%   { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 1; }
-    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(360deg); opacity: 0; }
+  @keyframes meadowDrift {
+    0%   { transform: translate(-50%, -50%) scale(0.38) rotate(0deg); opacity: 0; filter: blur(0.5px); }
+    15%  { opacity: 0.92; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(var(--scale, 0.92)) rotate(var(--rot)); opacity: 0; filter: blur(1.1px); }
   }
   .fx-particle {
     position: absolute;
-    width: 8px; height: 8px;
-    border-radius: 50%;
+    z-index: 3;
     pointer-events: none;
-    animation: burst var(--dur, 0.8s) ease-out forwards;
+    animation: meadowDrift var(--dur, 1.25s) cubic-bezier(.18,.72,.24,1) forwards;
+    transform-origin: center;
+  }
+  .fx-particle.leaf {
+    width: 9px;
+    height: 15px;
+    border-radius: 78% 18% 74% 22%;
+    box-shadow: 0 0 9px rgba(239, 229, 146, 0.42);
+  }
+  .fx-particle.petal {
+    width: 8px;
+    height: 12px;
+    border-radius: 80% 30% 72% 28%;
+    box-shadow: 0 0 9px rgba(255, 239, 175, 0.5);
+  }
+  .fx-particle.mote {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(255, 239, 169, 0.76);
   }
 </style>
 </head>
@@ -91,17 +179,28 @@
 <script>
   const stage = document.getElementById('stage');
 
+  function variantFor(color, kind) {
+    if (kind === 'levelup') return 'harvest';
+    if (color && /(FFD700|E8C84A|ffd|ffe|e8c|star)/i.test(color)) return 'harvest';
+    return 'spring';
+  }
+
+  function fontSizeFor(kind) {
+    if (kind === 'levelup') return '52px';
+    if (kind === 'critical') return '42px';
+    return '30px';
+  }
+
   function spawnFloat(text, x, y, color, kind) {
     const el = document.createElement('div');
-    el.className = 'fx-text ' + (kind || 'float');
+    const variant = variantFor(color, kind);
+    el.className = 'fx-text ' + (kind || 'float') + ' ' + variant;
     el.textContent = text;
     el.style.left = x + 'px';
     el.style.top = y + 'px';
-    el.style.color = color;
-    el.style.fontSize = (kind === 'critical' ? '52px' : kind === 'levelup' ? '72px' : '32px');
+    el.style.fontSize = fontSizeFor(kind);
     stage.appendChild(el);
-    setTimeout(() => el.remove(),
-      kind === 'critical' ? 1900 : kind === 'levelup' ? 2500 : 1500);
+    setTimeout(() => el.remove(), kind === 'levelup' ? 2200 : kind === 'critical' ? 1900 : 1780);
   }
 
   function spawnRing(x, y, variant) {
@@ -110,64 +209,86 @@
     r.style.left = x + 'px';
     r.style.top = y + 'px';
     stage.appendChild(r);
-    setTimeout(() => r.remove(), 1000);
+    setTimeout(() => r.remove(), 1240);
   }
 
-  function spawnBurst(x, y, color, count) {
-    count = count || 14;
-    for (let i = 0; i < count; i++) {
-      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
-      const dist = 80 + Math.random() * 60;
-      const dx = Math.cos(angle) * dist;
-      const dy = Math.sin(angle) * dist;
-      const dur = (0.6 + Math.random() * 0.4).toFixed(2) + 's';
+  function particleColor(kind, color, i) {
+    const green = color || '#b8d982';
+    const gold = '#f4d57d';
+    const cream = '#fff2bf';
+    if (kind === 'mote') return cream;
+    if (kind === 'petal') return i % 2 ? '#f6e3a1' : '#eacb82';
+    return i % 2 ? green : '#a9ca74';
+  }
+
+  function sprinkle(x, y, color, count, spread) {
+    const total = count || 10;
+    const radius = spread || 70;
+    for (let i = 0; i < total; i++) {
+      const kind = i % 5 === 0 ? 'petal' : i % 3 === 0 ? 'mote' : 'leaf';
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.12;
+      const dist = 28 + Math.random() * radius;
+      const sway = (Math.random() - 0.5) * 34;
+      const dx = Math.cos(angle) * dist + sway;
+      const dy = Math.sin(angle) * dist - 22 - Math.random() * 34;
       const p = document.createElement('div');
-      p.className = 'fx-particle';
+      const c = particleColor(kind, color, i);
+      p.className = 'fx-particle ' + kind;
       p.style.left = x + 'px';
       p.style.top = y + 'px';
-      p.style.background = color;
-      p.style.boxShadow = '0 0 12px ' + color;
-      p.style.setProperty('--dx', dx + 'px');
-      p.style.setProperty('--dy', dy + 'px');
-      p.style.setProperty('--dur', dur);
+      if (kind === 'mote') {
+        p.style.background = c;
+      } else {
+        p.style.background = 'linear-gradient(135deg, ' + c + ', rgba(255, 244, 184, 0.86))';
+      }
+      p.style.setProperty('--dx', dx.toFixed(1) + 'px');
+      p.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      p.style.setProperty('--rot', (55 + Math.random() * 250).toFixed(1) + 'deg');
+      p.style.setProperty('--scale', (0.72 + Math.random() * 0.48).toFixed(2));
+      p.style.setProperty('--dur', (1.02 + Math.random() * 0.62).toFixed(2) + 's');
       stage.appendChild(p);
-      setTimeout(() => p.remove(), 1100);
+      setTimeout(() => p.remove(), 1750);
     }
   }
 
-  // Python 调用入口
   window.fxFloat = function(text, x, y, color) {
-    spawnFloat(text, x, y, color || '#FFD700', 'float');
+    const c = color || '#b8d982';
+    spawnFloat(text, x, y, c, 'float');
+    sprinkle(x, y, c, 8, 48);
   };
+
   window.fxCritical = function(text, x, y, color) {
-    spawnFloat(text, x, y, color || '#FFD700', 'critical');
-    spawnRing(x, y, 'crystal');
-    spawnBurst(x, y, color || '#FFD700', 16);
+    const c = color || '#e8c84a';
+    spawnFloat(text, x, y, c, 'critical');
+    spawnRing(x, y, 'harvest');
+    sprinkle(x, y, c, 16, 96);
   };
+
   window.fxLevelUp = function(level, x, y) {
     const cx = x || window.innerWidth / 2;
-    const cy = y || window.innerHeight / 2;
-    spawnFloat('LEVEL UP', cx, cy - 60, '#4FC3F7', 'levelup');
-    spawnFloat('Lv.' + level, cx, cy + 40, '#FFD700', 'critical');
-    spawnRing(cx, cy, 'crystal');
-    spawnRing(cx, cy, '');
-    spawnBurst(cx, cy, '#4FC3F7', 24);
-    spawnBurst(cx, cy, '#FFD700', 18);
+    const cy = y || window.innerHeight * 0.42;
+    spawnFloat('麦浪加冕', cx, cy - 20, '#ffd86b', 'levelup');
+    spawnFloat('LV.' + level, cx, cy + 42, '#fff0a6', 'critical');
+    spawnRing(cx, cy + 18, 'harvest');
+    setTimeout(() => spawnRing(cx, cy + 18, 'harvest'), 180);
+    sprinkle(cx, cy + 16, '#f1d174', 28, 132);
   };
+
   window.fxAchievement = function(title, rarity) {
     const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
+    const cy = window.innerHeight * 0.45;
     const colors = {
-      bronze:  '#CD7F32',
-      silver:  '#BDC3C7',
-      crystal: '#4FC3F7',
-      star:    '#FFD700',
+      bronze:  '#cda06b',
+      silver:  '#d8e1d6',
+      crystal: '#9ed8c3',
+      star:    '#ffd86b',
     };
-    const c = colors[rarity] || '#FFD700';
-    spawnFloat('★ ' + title + ' ★', cx, cy, c, 'critical');
-    spawnRing(cx, cy, rarity === 'crystal' ? 'crystal' : '');
-    spawnBurst(cx, cy, c, 20);
+    const c = colors[rarity] || '#ffd86b';
+    spawnFloat('新徽章：' + title, cx, cy, c, 'critical');
+    spawnRing(cx, cy + 18, rarity === 'star' ? 'harvest' : '');
+    sprinkle(cx, cy + 12, c, 18, 96);
   };
+
   window.fxClear = function() { stage.innerHTML = ''; };
 </script>
 </body>
