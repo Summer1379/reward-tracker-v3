@@ -91,6 +91,35 @@ class RewardStateTest(unittest.TestCase):
         self.assertEqual("ember_heart", loaded.equipped_theme)
         self.assertEqual("金红胜利感", loaded.theme_profile()["label"])
 
+    def test_sound_pack_survives_save_and_load(self):
+        state = self.make_state()
+
+        self.assertTrue(state.set_sound_pack("dandantang"))
+        ok, err = state.save()
+
+        self.assertTrue(ok, err)
+        loaded = self.make_state()
+        self.assertEqual("dandantang", loaded.sound_pack)
+        self.assertEqual("弹弹堂弹跳包", loaded.sound_pack_label())
+
+    def test_unknown_sound_pack_falls_back_to_default(self):
+        with open(reward_tracker.SAVE_FILE, "w", encoding="utf-8") as f:
+            json.dump({"sound_pack": "missing_pack"}, f)
+
+        state = self.make_state()
+
+        self.assertEqual(reward_tracker.DEFAULT_SOUND_PACK, state.sound_pack)
+
+    def test_audio_machine_switches_sound_pack(self):
+        audio = reward_tracker.AudioStateMachine()
+
+        self.assertEqual(reward_tracker.DEFAULT_SOUND_PACK, audio.sound_pack)
+        self.assertTrue(audio.set_sound_pack("dandantang"))
+        self.assertEqual("dandantang", audio.sound_pack)
+        self.assertEqual("弹弹堂弹跳包", audio.sound_pack_label())
+        self.assertIn("click", audio.sound_files)
+        self.assertFalse(audio.set_sound_pack("dandantang"))
+
     def test_equip_theme_rejects_unowned_theme(self):
         state = self.make_state()
 

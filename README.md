@@ -31,12 +31,13 @@ python3 reward_tracker.py --self-test
 - 光效主题会改变经验槽、接近升级闪烁和高价值反馈的主色。
 - 3 个同名碎片可以在“身份”页锻造成指定称号或光效主题。
 - 打字、点击、移动分别推进“梦境铭文师 / 连击破阵者 / 原野巡游者”熟练度，统计页可查看职业等级。
+- 顶部“音效”按钮可在“田园风铃”和“弹弹堂弹跳包”之间切换；选择会写入存档。
 - “旅记”页会记录升级、职业突破、碎片锻造等长期记忆，让桌面反馈有个人故事线。
 - 存档会自动保存到 `~/.reward_tracker_v3.json`，关闭窗口时也会强制保存。
 
 ## 音效
 
-在 `assets/` 目录放入以下文件可使用自定义音效：
+在 `assets/` 目录放入以下文件可使用默认音效：
 - `sfx_move.wav`
 - `sfx_click.wav`
 - `sfx_type_burst.wav`
@@ -47,7 +48,9 @@ python3 reward_tracker.py --self-test
 - `sfx_level_victory.wav`
 - `sfx_level_up.wav`
 
-没有文件时自动使用更柔和的田园风合成音效。
+仓库附带一套原创合成 wav：`assets/sound_packs/dandantang/`。
+替换这个目录里的同名 wav 文件，可覆盖“弹弹堂弹跳包”的声音。
+没有文件时自动使用当前音效包的合成音色。
 三段经验奖励点会分别使用 25%、50%、75% 的风铃感音效文件；缺失时回退到通用 `sfx_xp_milestone.wav`。
 `sfx_level_victory.wav` 不存在时会回退使用旧的 `sfx_level_up.wav`。
 

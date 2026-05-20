@@ -344,15 +344,33 @@ DROP_TYPE_WEIGHTS = {
     "critical": {"title": 20, "theme": 15, "fragment": 65},
 }
 
+DEFAULT_SOUND_PACK = "pastoral"
+SOUND_PACKS = {
+    "pastoral": {
+        "id": "pastoral",
+        "label": "田园风铃",
+        "asset_dir": None,
+        "asset_volume": "0.7",
+    },
+    "dandantang": {
+        "id": "dandantang",
+        "label": "弹弹堂弹跳包",
+        "asset_dir": "dandantang",
+        "asset_volume": "0.75",
+    },
+}
+SOUND_PACK_ORDER = ("pastoral", "dandantang")
+
 
 class AudioStateMachine:
     """音频状态机：同类输入持续时只播放一次，类别切换可中断"""
 
-    def __init__(self):
+    def __init__(self, sound_pack=DEFAULT_SOUND_PACK):
         self.muted = False
         self.current_category = None
         self.current_proc = None
         self.last_play_time = {}
+        self.sound_pack = self._normalize_sound_pack(sound_pack)
         self.cooldown = {
             "move": 0.8,
             "click": 0.15,
@@ -367,6 +385,23 @@ class AudioStateMachine:
         }
         self.sound_files = self._resolve_sounds()
         self.lock = threading.Lock()
+
+    def _normalize_sound_pack(self, sound_pack):
+        if sound_pack in SOUND_PACKS:
+            return sound_pack
+        return DEFAULT_SOUND_PACK
+
+    def sound_pack_label(self):
+        return SOUND_PACKS[self.sound_pack]["label"]
+
+    def set_sound_pack(self, sound_pack):
+        sound_pack = self._normalize_sound_pack(sound_pack)
+        if sound_pack == self.sound_pack:
+            return False
+        self._stop_current()
+        self.sound_pack = sound_pack
+        self.sound_files = self._resolve_sounds()
+        return True
 
     def _resolve_sounds(self):
         mapping = {
@@ -388,13 +423,25 @@ class AudioStateMachine:
             "level_victory": "sfx_level_up.wav",
         }
         resolved = {}
+        profile = SOUND_PACKS[self.sound_pack]
+        pack_dir = profile.get("asset_dir")
         for key, fname in mapping.items():
+            if pack_dir:
+                pack_path = os.path.join(ASSETS_DIR, "sound_packs", pack_dir, fname)
+                if os.path.exists(pack_path):
+                    resolved[key] = pack_path
+                    continue
             path = os.path.join(ASSETS_DIR, fname)
             if os.path.exists(path):
                 resolved[key] = path
                 continue
             fallback_name = fallback.get(key)
             if fallback_name:
+                if pack_dir:
+                    pack_fallback_path = os.path.join(ASSETS_DIR, "sound_packs", pack_dir, fallback_name)
+                    if os.path.exists(pack_fallback_path):
+                        resolved[key] = pack_fallback_path
+                        continue
                 fallback_path = os.path.join(ASSETS_DIR, fallback_name)
                 if os.path.exists(fallback_path):
                     resolved[key] = fallback_path
@@ -433,7 +480,7 @@ class AudioStateMachine:
         try:
             if path and platform.system() == "Darwin":
                 proc = subprocess.Popen(
-                    ["afplay", "-v", "0.7", path],
+                    ["afplay", "-v", SOUND_PACKS[self.sound_pack]["asset_volume"], path],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                 )
@@ -444,42 +491,94 @@ class AudioStateMachine:
             pass
 
     def _play_synth(self, category):
-        voices = {
-            "move": [((523, 659), 0.085, 0.018, 0.032)],
-            "click": [((784, 1175), 0.095, 0.018, 0.04)],
-            "type": [((587, 880), 0.07, 0.02, 0.035), ((659, 988), 0.09, 0.0, 0.032)],
-            "level_up": [
-                ((392, 523), 0.105, 0.025, 0.05),
-                ((523, 659), 0.105, 0.025, 0.05),
-                ((659, 784, 988), 0.18, 0.0, 0.046),
-            ],
-            "xp_milestone": [((659, 988), 0.11, 0.026, 0.042), ((784, 1175), 0.13, 0.0, 0.038)],
-            "xp_milestone_25": [
-                ((587, 880), 0.12, 0.032, 0.04),
-                ((659, 988), 0.16, 0.0, 0.036),
-            ],
-            "xp_milestone_50": [
-                ((523, 784), 0.105, 0.024, 0.038),
-                ((659, 988), 0.12, 0.028, 0.04),
-                ((784, 1175), 0.16, 0.0, 0.035),
-            ],
-            "xp_milestone_75": [
-                ((440, 659), 0.11, 0.022, 0.038),
-                ((587, 880), 0.12, 0.026, 0.04),
-                ((740, 1109), 0.13, 0.028, 0.04),
-                ((880, 1319), 0.18, 0.0, 0.034),
-            ],
-            "level_victory": [
-                ((392, 523), 0.14, 0.035, 0.052),
-                ((523, 659), 0.14, 0.035, 0.052),
-                ((659, 784, 988), 0.18, 0.04, 0.05),
-                ((523, 659, 784, 1047), 0.36, 0.0, 0.044),
-            ],
-            "achievement": [
-                ((523, 784), 0.12, 0.028, 0.045),
-                ((659, 988), 0.15, 0.0, 0.04),
-            ],
+        voice_packs = {
+            "pastoral": {
+                "move": [((523, 659), 0.085, 0.018, 0.032)],
+                "click": [((784, 1175), 0.095, 0.018, 0.04)],
+                "type": [((587, 880), 0.07, 0.02, 0.035), ((659, 988), 0.09, 0.0, 0.032)],
+                "level_up": [
+                    ((392, 523), 0.105, 0.025, 0.05),
+                    ((523, 659), 0.105, 0.025, 0.05),
+                    ((659, 784, 988), 0.18, 0.0, 0.046),
+                ],
+                "xp_milestone": [((659, 988), 0.11, 0.026, 0.042), ((784, 1175), 0.13, 0.0, 0.038)],
+                "xp_milestone_25": [
+                    ((587, 880), 0.12, 0.032, 0.04),
+                    ((659, 988), 0.16, 0.0, 0.036),
+                ],
+                "xp_milestone_50": [
+                    ((523, 784), 0.105, 0.024, 0.038),
+                    ((659, 988), 0.12, 0.028, 0.04),
+                    ((784, 1175), 0.16, 0.0, 0.035),
+                ],
+                "xp_milestone_75": [
+                    ((440, 659), 0.11, 0.022, 0.038),
+                    ((587, 880), 0.12, 0.026, 0.04),
+                    ((740, 1109), 0.13, 0.028, 0.04),
+                    ((880, 1319), 0.18, 0.0, 0.034),
+                ],
+                "level_victory": [
+                    ((392, 523), 0.14, 0.035, 0.052),
+                    ((523, 659), 0.14, 0.035, 0.052),
+                    ((659, 784, 988), 0.18, 0.04, 0.05),
+                    ((523, 659, 784, 1047), 0.36, 0.0, 0.044),
+                ],
+                "achievement": [
+                    ((523, 784), 0.12, 0.028, 0.045),
+                    ((659, 988), 0.15, 0.0, 0.04),
+                ],
+            },
+            "dandantang": {
+                "move": [
+                    ((740, 988), 0.052, 0.012, 0.038),
+                    ((622, 831), 0.072, 0.0, 0.034),
+                ],
+                "click": [
+                    ((988, 1976), 0.038, 0.012, 0.052),
+                    ((1175, 1568), 0.064, 0.0, 0.045),
+                ],
+                "type": [
+                    ((784, 1175), 0.045, 0.012, 0.04),
+                    ((988, 1480), 0.052, 0.012, 0.04),
+                    ((1175, 1760), 0.07, 0.0, 0.038),
+                ],
+                "level_up": [
+                    ((523, 784), 0.08, 0.018, 0.052),
+                    ((659, 988), 0.08, 0.018, 0.052),
+                    ((784, 1175, 1568), 0.16, 0.0, 0.048),
+                ],
+                "xp_milestone": [
+                    ((784, 1175), 0.07, 0.018, 0.046),
+                    ((988, 1568), 0.095, 0.0, 0.04),
+                ],
+                "xp_milestone_25": [
+                    ((740, 1110), 0.065, 0.018, 0.045),
+                    ((932, 1397), 0.095, 0.0, 0.04),
+                ],
+                "xp_milestone_50": [
+                    ((659, 988), 0.06, 0.015, 0.045),
+                    ((831, 1245), 0.068, 0.016, 0.045),
+                    ((1047, 1568), 0.11, 0.0, 0.04),
+                ],
+                "xp_milestone_75": [
+                    ((587, 880), 0.055, 0.014, 0.044),
+                    ((740, 1110), 0.062, 0.014, 0.045),
+                    ((932, 1397), 0.07, 0.016, 0.045),
+                    ((1175, 1760), 0.13, 0.0, 0.04),
+                ],
+                "level_victory": [
+                    ((523, 784), 0.09, 0.02, 0.055),
+                    ((659, 988), 0.09, 0.02, 0.056),
+                    ((784, 1175, 1568), 0.15, 0.032, 0.052),
+                    ((988, 1319, 1976), 0.26, 0.0, 0.048),
+                ],
+                "achievement": [
+                    ((740, 1110), 0.075, 0.018, 0.05),
+                    ((988, 1480), 0.105, 0.0, 0.044),
+                ],
+            },
         }
+        voices = voice_packs.get(self.sound_pack, voice_packs[DEFAULT_SOUND_PACK])
         seq = voices.get(category, [((440, 660), 0.12, 0.0, 0.04)])
         samples = []
         sample_rate = 22050
@@ -887,6 +986,7 @@ class RewardState:
         self.owned_titles = set()
         self.equipped_title = None
         self.equipped_theme = None
+        self.sound_pack = DEFAULT_SOUND_PACK
         self.masteries = self._default_masteries()
         self.chronicle = []
         self.dirty = False
@@ -911,6 +1011,26 @@ class RewardState:
             }
             for key in MASTERY_DEFS
         }
+
+    def _normalize_sound_pack(self, sound_pack=None):
+        candidate = self.sound_pack if sound_pack is None else sound_pack
+        if candidate in SOUND_PACKS:
+            self.sound_pack = candidate
+        else:
+            self.sound_pack = DEFAULT_SOUND_PACK
+        return self.sound_pack
+
+    def set_sound_pack(self, sound_pack):
+        old = self._normalize_sound_pack()
+        new = self._normalize_sound_pack(sound_pack)
+        if new == old:
+            return False
+        self.mark_dirty()
+        return True
+
+    def sound_pack_label(self):
+        self._normalize_sound_pack()
+        return SOUND_PACKS[self.sound_pack]["label"]
 
     def _roll_daily_if_needed(self):
         today = self._today_str()
@@ -1412,6 +1532,7 @@ class RewardState:
         self._normalize_inventory()
         self._normalize_masteries()
         self._normalize_chronicle()
+        self._normalize_sound_pack()
         data = {
             "total_score": self.total_score,
             "level": self.level,
@@ -1426,6 +1547,7 @@ class RewardState:
             "owned_titles": sorted(self.owned_titles),
             "equipped_title": self.equipped_title,
             "equipped_theme": self.equipped_theme,
+            "sound_pack": self.sound_pack,
             "masteries": self.masteries,
             "chronicle": self.chronicle,
             "today": self.today,
@@ -1468,6 +1590,7 @@ class RewardState:
             self.owned_titles = set(data.get("owned_titles", self.inventory.get("titles", [])))
             self.equipped_title = data.get("equipped_title")
             self.equipped_theme = data.get("equipped_theme")
+            self.sound_pack = self._normalize_sound_pack(data.get("sound_pack", DEFAULT_SOUND_PACK))
             self.masteries = data.get("masteries", self._default_masteries())
             self.chronicle = data.get("chronicle", [])
             self.today = data.get("today", self._today_str())
@@ -1487,7 +1610,7 @@ class App:
             _load_gui_modules()
         self.root = root
         self.state = RewardState()
-        self.audio = AudioStateMachine()
+        self.audio = AudioStateMachine(self.state.sound_pack)
         self.effects = DesktopEffects(root)
         self.overlay = make_overlay()  # 全屏特效层（PyObjC + WKWebView）
         self.log_entries = deque(maxlen=20)
@@ -1538,6 +1661,24 @@ class App:
             borderwidth=0,
         )
         self.mute_btn.pack(side=tk.RIGHT)
+
+        self.sound_pack_btn = tk.Button(
+            header,
+            text=self._sound_pack_button_text(),
+            command=self._cycle_sound_pack,
+            bg=COLORS["SURFACE2"],
+            fg=COLORS["GOLD"],
+            activebackground=COLORS["SURFACE"],
+            activeforeground=COLORS["STAR"],
+            relief=tk.FLAT,
+            padx=14,
+            pady=6,
+            font=("Helvetica", 11),
+            cursor="hand2",
+            highlightthickness=0,
+            borderwidth=0,
+        )
+        self.sound_pack_btn.pack(side=tk.RIGHT, padx=(0, 8))
 
         self.lv_badge = tk.Label(
             header,
@@ -1777,7 +1918,10 @@ class App:
     def _status_text(self):
         sound_status = "静音" if self.audio.muted else "音效开"
         sfx_info = f"{len(self.audio.sound_files)} 个音效文件" if self.audio.sound_files else "使用合成音"
-        return f"{sound_status} · {sfx_info} · 存档：{SAVE_FILE}"
+        return f"{sound_status} · {self.audio.sound_pack_label()} · {sfx_info} · 存档：{SAVE_FILE}"
+
+    def _sound_pack_button_text(self):
+        return f"音效：{self.state.sound_pack_label()}"
 
     def _title_badge_text(self):
         title = self.state.equipped_title
@@ -2069,6 +2213,18 @@ class App:
         muted = self.audio.toggle_mute()
         self.mute_btn.configure(text="🔇 已静音" if muted else "🔊 音效开")
         self.status_label.configure(text=self._status_text())
+
+    def _cycle_sound_pack(self):
+        current = self.state._normalize_sound_pack()
+        idx = SOUND_PACK_ORDER.index(current) if current in SOUND_PACK_ORDER else 0
+        next_pack = SOUND_PACK_ORDER[(idx + 1) % len(SOUND_PACK_ORDER)]
+        self.state.set_sound_pack(next_pack)
+        self.audio.set_sound_pack(self.state.sound_pack)
+        self.audio.play("click", priority=True)
+        self.sound_pack_btn.configure(text=self._sound_pack_button_text())
+        self.status_label.configure(text=self._status_text())
+        self._log(f"音效包已切换：{self.state.sound_pack_label()}")
+        self._save_if_dirty()
 
     def _log(self, message):
         ts = time.strftime("%H:%M:%S")
